@@ -1,0 +1,25 @@
+{
+  "persons": [
+    {
+      "name": "Arto Hellas",
+      "number": "0101010",
+      "id": "1"
+    },
+    {
+      "name": "Ada Lovelace",
+      "number": "39-44-5323523",
+      "id": "2"
+    },
+    {
+      "name": "Dan Abramov",
+      "number": "12-43-234345",
+      "id": "3"
+    },
+    {
+      "name": "testing",
+      "number": "020202",
+      "id": "3xi9VAf8kAw"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
