@@ -1,0 +1,27 @@
+{
+  "name": "fs-backend",
+  "version": "1.0.0",
+  "description": "Fullstack Open part 3 backend",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build:ui": "rm -rf dist/ && cd ../frontend && npm i && npm run build && cp -r dist ../backend",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Joona Kärkkäinen",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.5.2",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "@stylistic/eslint-plugin-js": "^2.6.2",
+    "eslint": "^9.9.0",
+    "nodemon": "^3.1.4"
+  }
+}
