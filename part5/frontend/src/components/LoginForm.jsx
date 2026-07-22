@@ -1,34 +1,40 @@
-const LoginForm = ({
-  username,
-  password,
-  handleUsernameChange,
-  handlePasswordChange,
-  handleSubmit,
-}) => (
-  <form onSubmit={handleSubmit}>
-    <h2>log in to application</h2>
+import { useState } from 'react'
+import { TextField, Button, Box } from '@mui/material'
+
+const LoginForm = ({ onLogin }) => {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    onLogin({ username, password })
+  }
+
+  return (
     <div>
-      username
-      <input
-        type="text"
-        value={username}
-        name="Username"
-        placeholder="username"
-        onChange={handleUsernameChange}
-      />
+      <h2>log in to application</h2>
+      <form onSubmit={handleSubmit}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 300 }}>
+          <TextField
+            id="username"
+            label="username"
+            value={username}
+            onChange={({ target }) => setUsername(target.value)}
+          />
+          <TextField
+            id="password"
+            label="password"
+            type="password"
+            value={password}
+            onChange={({ target }) => setPassword(target.value)}
+          />
+          <Button variant="contained" type="submit">
+            login
+          </Button>
+        </Box>
+      </form>
     </div>
-    <div>
-      password
-      <input
-        type="password"
-        value={password}
-        name="Password"
-        placeholder="password"
-        onChange={handlePasswordChange}
-      />
-    </div>
-    <button type="submit">login</button>
-  </form>
-)
+  )
+}
 
 export default LoginForm

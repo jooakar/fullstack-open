@@ -1,38 +1,44 @@
-import { useState } from 'react'
+import { Card, CardContent, Typography, Button, Link, Stack } from '@mui/material'
 
-const blogStyle = {
-  paddingTop: 10,
-  paddingLeft: 2,
-  border: 'solid',
-  borderWidth: 1,
-  marginBottom: 5,
-}
+const Blog = ({ blog, user, onLike, onRemove }) => {
+  if (!blog) return null
 
-const Blog = ({ blog, onLike, onRemove, canRemove }) => {
-  const [visible, setVisible] = useState(false)
-
-  const creator = blog.user?.name || blog.user?.username
+  const canRemove = user && blog.user?.username === user.username
 
   return (
-    <div style={blogStyle} className="blog">
-      <div className="blog-summary">
-        {blog.title} {blog.author}
-        <button onClick={() => setVisible(!visible)}>
-          {visible ? 'hide' : 'view'}
-        </button>
-      </div>
-      {visible && (
-        <div className="blog-details">
-          <div>{blog.url}</div>
-          <div>
-            likes {blog.likes}
-            <button onClick={() => onLike(blog)}>like</button>
-          </div>
-          {creator && <div>{creator}</div>}
-          {canRemove && <button onClick={() => onRemove(blog)}>remove</button>}
-        </div>
-      )}
-    </div>
+    <Card className="blog" sx={{ maxWidth: 500, mt: 2 }}>
+      <CardContent>
+        <Typography variant="h5" component="h2">
+          {blog.title}
+        </Typography>
+        <Typography color="text.secondary" gutterBottom>
+          {blog.author}
+        </Typography>
+        <Link href={blog.url} target="_blank" rel="noreferrer">
+          {blog.url}
+        </Link>
+        <Typography className="likes" sx={{ mt: 1 }}>
+          likes {blog.likes}
+          {user && (
+            <Button size="small" onClick={() => onLike(blog)} sx={{ ml: 1 }}>
+              like
+            </Button>
+          )}
+        </Typography>
+        {blog.user && (
+          <Typography sx={{ mt: 1 }}>
+            added by {blog.user.name || blog.user.username}
+          </Typography>
+        )}
+        {canRemove && (
+          <Stack direction="row" sx={{ mt: 2 }}>
+            <Button variant="outlined" color="error" onClick={() => onRemove(blog)}>
+              remove
+            </Button>
+          </Stack>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

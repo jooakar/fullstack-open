@@ -12,39 +12,60 @@ const blog = {
   user: { username: 'creator', name: 'Creator Name' },
 }
 
-describe('<Blog />', () => {
-  test('renders title and author but not url or likes by default', () => {
-    const { container } = render(<Blog blog={blog} onLike={vi.fn()} onRemove={vi.fn()} />)
+describe('<Blog /> single view', () => {
+  test('shows blog info and likes but no buttons to unauthenticated users', () => {
+    render(<Blog blog={blog} user={null} onLike={vi.fn()} onRemove={vi.fn()} />)
 
-    const summary = container.querySelector('.blog-summary')
-    expect(summary).toHaveTextContent(blog.title)
-    expect(summary).toHaveTextContent(blog.author)
-
-    expect(container.querySelector('.blog-details')).toBeNull()
-    expect(screen.queryByText(blog.url)).toBeNull()
-    expect(screen.queryByText('likes', { exact: false })).toBeNull()
-  })
-
-  test('shows url and likes after the view button is clicked', async () => {
-    render(<Blog blog={blog} onLike={vi.fn()} onRemove={vi.fn()} />)
-
-    const user = userEvent.setup()
-    await user.click(screen.getByText('view'))
-
-    expect(screen.getByText(blog.url)).toBeDefined()
+    expect(screen.getByText(blog.title)).toBeDefined()
+    expect(screen.getByText(blog.author)).toBeDefined()
     expect(screen.getByText('likes', { exact: false })).toHaveTextContent('likes 7')
+
+    expect(screen.queryByRole('button', { name: 'like' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'remove' })).toBeNull()
   })
 
-  test('calls the like handler once per click', async () => {
+  test('shows only the like button to an authenticated non-creator', () => {
+    render(
+      <Blog
+        blog={blog}
+        user={{ username: 'someoneelse' }}
+        onLike={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'like' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'remove' })).toBeNull()
+  })
+
+  test('shows the delete button to the creator', () => {
+    render(
+      <Blog
+        blog={blog}
+        user={{ username: 'creator' }}
+        onLike={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'like' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'remove' })).toBeDefined()
+  })
+
+  test('calls the like handler when the like button is clicked', async () => {
     const mockLike = vi.fn()
-    render(<Blog blog={blog} onLike={mockLike} onRemove={vi.fn()} />)
+    render(
+      <Blog
+        blog={blog}
+        user={{ username: 'creator' }}
+        onLike={mockLike}
+        onRemove={vi.fn()}
+      />,
+    )
 
     const user = userEvent.setup()
-    await user.click(screen.getByText('view'))
-
-    const likeButton = screen.getByText('like')
-    await user.click(likeButton)
-    await user.click(likeButton)
+    await user.click(screen.getByRole('button', { name: 'like' }))
+    await user.click(screen.getByRole('button', { name: 'like' }))
 
     expect(mockLike.mock.calls).toHaveLength(2)
   })
