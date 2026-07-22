@@ -5,16 +5,41 @@ import supertest from 'supertest'
 
 import app from '../app.js'
 import { Blog } from '../models/blog.js'
+import { User } from '../models/user.js'
 import { MONGODB_URI } from '../utils/config.js'
-import { blogsInDb, initialBlogs, nonExistingId } from './test_helper.js'
+import {
+  blogsInDb,
+  createUser,
+  initialBlogs,
+  nonExistingId,
+} from './test_helper.js'
 
 await mongoose.connect(MONGODB_URI, { family: 4 })
 
 const api = supertest(app)
 
+const login = async (username, password) => {
+  const response = await api.post('/api/login').send({ username, password })
+  return response.body.token
+}
+
+const auth = (token) => ({ Authorization: `Bearer ${token}` })
+
+let token
+let user
+
 beforeEach(async () => {
   await Blog.deleteMany({})
-  await Blog.insertMany(initialBlogs)
+  await User.deleteMany({})
+
+  user = await createUser('creator', 'sekret')
+  token = await login('creator', 'sekret')
+
+  const saved = await Blog.insertMany(
+    initialBlogs.map((blog) => ({ ...blog, user: user._id })),
+  )
+  user.blogs = saved.map((blog) => blog._id)
+  await user.save()
 })
 
 after(async () => {
@@ -41,6 +66,13 @@ describe('GET /api/blogs', () => {
       assert.strictEqual(blog._id, undefined)
     }
   })
+
+  test('blogs include populated creator info', async () => {
+    const response = await api.get('/api/blogs')
+    for (const blog of response.body) {
+      assert.strictEqual(blog.user.username, 'creator')
+    }
+  })
 })
 
 describe('POST /api/blogs', () => {
@@ -54,6 +86,7 @@ describe('POST /api/blogs', () => {
 
     await api
       .post('/api/blogs')
+      .set(auth(token))
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -64,6 +97,29 @@ describe('POST /api/blogs', () => {
     assert.ok(titles.includes(newBlog.title))
   })
 
+  test('associates the created blog with the logged in user', async () => {
+    const response = await api
+      .post('/api/blogs')
+      .set(auth(token))
+      .send({ title: 'Owned', url: 'https://example.com/owned' })
+      .expect(201)
+
+    assert.strictEqual(response.body.user.username, 'creator')
+
+    const usersBlogs = (await User.findById(user._id)).blogs
+    assert.ok(usersBlogs.some((id) => id.toString() === response.body.id))
+  })
+
+  test('fails with 401 when no token is provided', async () => {
+    await api
+      .post('/api/blogs')
+      .send({ title: 'No token', url: 'https://example.com/no-token' })
+      .expect(401)
+
+    const blogs = await blogsInDb()
+    assert.strictEqual(blogs.length, initialBlogs.length)
+  })
+
   test('defaults likes to 0 when missing', async () => {
     const newBlog = {
       title: 'No likes given',
@@ -71,13 +127,18 @@ describe('POST /api/blogs', () => {
       url: 'https://example.com/no-likes',
     }
 
-    const response = await api.post('/api/blogs').send(newBlog).expect(201)
+    const response = await api
+      .post('/api/blogs')
+      .set(auth(token))
+      .send(newBlog)
+      .expect(201)
     assert.strictEqual(response.body.likes, 0)
   })
 
   test('responds with 400 when title is missing', async () => {
     await api
       .post('/api/blogs')
+      .set(auth(token))
       .send({ author: 'X', url: 'https://example.com' })
       .expect(400)
   })
@@ -85,25 +146,49 @@ describe('POST /api/blogs', () => {
   test('responds with 400 when url is missing', async () => {
     await api
       .post('/api/blogs')
+      .set(auth(token))
       .send({ title: 'No url', author: 'X' })
       .expect(400)
   })
 })
 
 describe('DELETE /api/blogs/:id', () => {
-  test('removes the blog and responds with 204', async () => {
+  test('removes the blog and responds with 204 for the creator', async () => {
     const [target] = await blogsInDb()
 
-    await api.delete(`/api/blogs/${target.id}`).expect(204)
+    await api.delete(`/api/blogs/${target.id}`).set(auth(token)).expect(204)
 
     const remaining = await blogsInDb()
     assert.strictEqual(remaining.length, initialBlogs.length - 1)
     assert.ok(!remaining.some((b) => b.id === target.id))
   })
 
+  test('responds with 401 when no token is provided', async () => {
+    const [target] = await blogsInDb()
+
+    await api.delete(`/api/blogs/${target.id}`).expect(401)
+
+    const remaining = await blogsInDb()
+    assert.strictEqual(remaining.length, initialBlogs.length)
+  })
+
+  test('responds with 401 when a different user attempts deletion', async () => {
+    await createUser('intruder', 'sekret')
+    const otherToken = await login('intruder', 'sekret')
+    const [target] = await blogsInDb()
+
+    await api
+      .delete(`/api/blogs/${target.id}`)
+      .set(auth(otherToken))
+      .expect(401)
+
+    const remaining = await blogsInDb()
+    assert.strictEqual(remaining.length, initialBlogs.length)
+  })
+
   test('responds with 204 even when the id does not exist', async () => {
     const id = await nonExistingId()
-    await api.delete(`/api/blogs/${id}`).expect(204)
+    await api.delete(`/api/blogs/${id}`).set(auth(token)).expect(204)
   })
 })
 
