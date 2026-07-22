@@ -1,11 +1,19 @@
 import mongoose from 'mongoose'
 
 const blogSchema = new mongoose.Schema({
-  title: String,
+  title: { type: String, required: true },
   author: String,
-  url: String,
-  likes: Number,
+  url: { type: String, required: true },
+  likes: { type: Number, default: 0 },
 })
 
-/** @typedef {mongoose.InferSchemaType<typeof blogSchema>} Blog */
+blogSchema.set('toJSON', {
+  transform: (_doc, ret) => {
+    ret.id = ret._id.toString()
+    delete ret._id
+    delete ret.__v
+  },
+})
+
+/** @typedef {mongoose.InferSchemaType<typeof blogSchema> & { id: string }} Blog */
 export const Blog = mongoose.model('Blog', blogSchema)

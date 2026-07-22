@@ -1,10 +1,8 @@
-import express from 'express'
-import blogRouter from './controllers/blog.js'
-import { PORT } from './utils/config.js'
+import mongoose from 'mongoose'
+import app from './app.js'
+import { PORT, MONGODB_URI } from './utils/config.js'
 
-const app = express()
-app.use(express.json())
-app.use('/api/blogs', blogRouter);
+await mongoose.connect(MONGODB_URI, { family: 4 })
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)

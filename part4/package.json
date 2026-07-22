@@ -8,11 +8,15 @@
   "main": "index.js",
   "scripts": {
     "dev": "node --env-file=.env --watch index.js",
-    "test": "node --test"
+    "start": "node --env-file=.env index.js",
+    "test": "NODE_ENV=test node --env-file=.env --test"
   },
   "dependencies": {
     "express": "^5.2.1",
     "mongoose": "^9.6.3",
     "ramda": "^0.32.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2"
   }
 }
